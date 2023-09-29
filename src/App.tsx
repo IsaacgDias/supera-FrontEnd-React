@@ -14,9 +14,10 @@ function App() {
   // Usando o hook useBancoData para buscar dados da API
   const { data } = useBancoData();
 
-  // Armazena datas filtradas
+  // Armazena dados filtrados
   const [filteredData, setFilteredData] = useState<BancoData[]>([]);
   const [filteredOperador, setFilteredOperador] = useState<BancoData[]>([]);
+  const [filter, setFilter] = useState<BancoData[]>([]);
 
   // Função para lidar com o clique no botão "Pesquisar"
   const handlePesquisarClick = () => {
@@ -49,17 +50,31 @@ function App() {
       .catch(error => {
         console.error(error);
       });
+
+    // Faz uma chamada à API para filtrar por nome do operador e o período de tempo
+    fetch(`http://localhost:8080/dados?dataInicial=${dataInicial}&dataFinal=${dataFinal}&nomeOperadorTransacao=${nomeOperadorF}`)
+    .then(response => response.json())
+    .then((data: BancoData[]) => {
+      setFilter(data); // Atualiza os dados filtrados pelo operador e datas
+      setDataInicial('');
+      setDataFinal('');
+      setNomeOperador('');
+    })
+    .catch(error => {
+      console.error(error);
+    });
   };
 
   // Remove o filtro da data início e data fim
   const handleRemoverFiltro = () => {
     setFilteredData([]); // Limpa os dados das datas filtradas
     setFilteredOperador([]); // Limpa os dados filtrados pelo nome do operador
+    setFilter([]); // Limpa os dados filtrados das data e pelo nome do operador
   }
 
   // Função para renderizar os dados na tabela
   const renderTableData = () => {
-    const displayData = filteredOperador.length > 0 ? filteredOperador : (filteredData.length > 0 ? filteredData : (data || []));
+    const displayData = filteredOperador.length > 0 ? filteredOperador : (filteredData.length > 0 ? filteredData : (filter.length > 0 ? filter : (data || [])));
     
     // Renderiza a interface do usuário
     return displayData.map((bancoData, index) => (
