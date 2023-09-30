@@ -16,7 +16,6 @@ export function Card(props: CardProps) {
   return (
     //Redenriza uma tabela com os dados
     <tr>
-      <td>ID</td>
       <td>{dataTransferencia.toLocaleString()}</td>
       <td>{valor.toFixed(2)}</td>
       <td>{tipo}</td>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import './App.css';
 import './components/card/card.css';
 import { Card } from './components/card/card';
@@ -18,6 +18,7 @@ function App() {
   // Armazena os saldos
   const [saldoTotal, setSaldoTotal] = useState(0);
   const [saldoPeriodo, setSaldoPeriodo] = useState(0);
+
 
   // Usando o hook useBancoData para buscar dados da API
   const { data } = useBancoData();
@@ -55,92 +56,120 @@ function App() {
   }, []);
 
   // Função para lidar com o clique no botão "Pesquisar"
-  const handlePesquisarClick = () => {
-      
-     
-   
-    
+  const handlePesquisarClick = async () => {
+    // O usuário não consegue pesquisar sem selecionar algum filtro
+    if (!dataInicialF && !dataFinalF && !nomeOperadorF) {
+      alert("Seleciona o campos de filtro antes de pesquisar.");
+
+    }
+
+    //Exibe a mensagem senão encontrar dados correspondentes
+    function showNoResultsMessage() {
+      alert("Nenhum resultado encontrado no filtro");
+      return handleRemoverFiltro();
+    }
 
     const dataInicial = `${dataInicialF}T00:00:00`;
     const dataFinal = `${dataFinalF}T23:59:59`;
 
-    // Faz uma chamada à API para filtrar por período
-    fetch(`http://localhost:8080/por-periodo?dataInicial=${dataInicial}&dataFinal=${dataFinal}`)
-      .then(response => response.json())
-      .then((data: BancoData[]) => {
-       
-
-        
-        setFilteredData(data);
-        
-        // Verifica se a variável data não é undefined
-
-        if (data) {
-          const saldoPeriodoCalculado = data.reduce((total, transacao) => {
-            const dataTransacao = new Date(transacao.dataTransferencia);
-            if (dataTransacao >= new Date(dataInicial) && dataTransacao <= new Date(dataFinal)) {
-              return transacao.tipo === 'DEBITO' ? total - transacao.valor : total + transacao.valor;
-            }
-            return total;
-          }, 0);
-
-          setSaldoPeriodo(saldoPeriodoCalculado); // Define o saldo no período
-        }
-        // Após a pesquisa bem-sucedida, Limpa os campos
-        setDataInicial('');
-        setDataFinal('');
-        setNomeOperador('');
-      })
-      .catch(error => {
-        console.error(error);
-      });
-
-
     // Faz uma chamada à API para filtrar por nome do operador
-    fetch(`http://localhost:8080/operador?nomeOperadorTransacao=${nomeOperadorF}`)
-      .then(response => response.json())
-      .then((data: BancoData[]) => {
-        setFilteredOperador(data); // Atualiza os dados filtrados pelo operador
+    if (nomeOperadorF) {
+      if (dataInicial == 'T00:00:00' && dataFinal == 'T23:59:59') {
+        
+        const endpoint = `http://localhost:8080/operador?nomeOperadorTransacao=${nomeOperadorF}`;
 
-        if (data) {
+        fetch(endpoint)
+          .then(response => response.json())
+          .then((data: BancoData[]) => {
+            if (Array.isArray(data) && data.length === 0) {
+              showNoResultsMessage();
+              return; 
+            } else {
+              setFilteredOperador(data); // Atualiza os dados filtrados por nome operador
+            }
 
-          const saldoPeriodoCalculado = data.reduce((total, transacao) => {
-            return transacao.tipo === 'DEBITO' ? total - transacao.valor : total + transacao.valor;
-          }, 0);
 
-          setSaldoPeriodo(saldoPeriodoCalculado); // Define o saldo no período
-        }
-        setDataInicial('');
-        setDataFinal('');
-        setNomeOperador('');
-      })
-      .catch(error => {
-        console.error(error);
-      });
+            if (data) {
+              const saldoPeriodoCalculado = data.reduce((total, transacao) => {
+                return transacao.tipo === 'DEBITO' ? total - transacao.valor : total + transacao.valor;
+              }, 0);
+
+              setSaldoPeriodo(saldoPeriodoCalculado); // Define o saldo para o operador
+              
+            }
+          })
+          .catch(error => {
+            console.error(error);
+          });
+      }
+    }
 
     // Faz uma chamada à API para filtrar por nome do operador e o período de tempo
-    fetch(`http://localhost:8080/dados?dataInicial=${dataInicial}&dataFinal=${dataFinal}&nomeOperadorTransacao=${nomeOperadorF}`)
-      .then(response => response.json())
-      .then((data: BancoData[]) => {
-        setFilter(data); // Atualiza os dados filtrados pelo operador e datas
-        if (data) {
-          const saldoPeriodoCalculado = data.reduce((total, transacao) => {
-            const dataTransacao = new Date(transacao.dataTransferencia);
-            if (dataTransacao >= new Date(dataInicial) && dataTransacao <= new Date(dataFinal)) {
-              return transacao.tipo === 'DEBITO' ? total - transacao.valor : total + transacao.valor;
-            }
-            return total;
-          }, 0);
+    if (dataInicial && dataFinal && nomeOperadorF) {
+      console.log("oieeeeeeee");
+      console.log("dats" + dataInicial + dataFinal)
+      const endpoint = `http://localhost:8080/dados?dataInicial=${dataInicial}&dataFinal=${dataFinal}&nomeOperadorTransacao=${nomeOperadorF}`;
 
-          setSaldoPeriodo(saldoPeriodoCalculado); // Define o saldo no período
-        }
-        setDataInicial('');
-        setDataFinal('');
-        setNomeOperador('');
-      })
-      .catch(error => {
-        console.error(error);
-      });
+      fetch(endpoint)
+        .then(response => response.json())
+        .then((data: BancoData[]) => {
+          if (Array.isArray(data) && data.length === 0) {
+            showNoResultsMessage();
+            return; 
+          } else {
+            setFilter(data); // Atualiza os dados filtrados pelo período e operador
+          }
+
+
+          if (data) {
+            const saldoPeriodoCalculado = data.reduce((total, transacao) => {
+              const dataTransacao = new Date(transacao.dataTransferencia);
+              if (dataTransacao >= new Date(dataInicial) && dataTransacao <= new Date(dataFinal)) {
+                return transacao.tipo === 'DEBITO' ? total - transacao.valor : total + transacao.valor;
+              }
+              return total;
+            }, 0);
+
+            setSaldoPeriodo(saldoPeriodoCalculado); // Define o saldo no período
+          }
+        })
+        .catch(error => {
+          console.error(error);
+        });
+    }
+
+    // Faz uma chamada à API para filtrar por período
+    if (dataInicial && dataFinal && (nomeOperadorF == '')) {
+      const endpoint = `http://localhost:8080/por-periodo?dataInicial=${dataInicial}&dataFinal=${dataFinal}`;
+
+      fetch(endpoint)
+        .then(response => response.json())
+        .then((data: BancoData[]) => {
+          if (Array.isArray(data) && data.length === 0) {
+            showNoResultsMessage();
+            return; 
+          } else {
+            setFilteredData(data); // Atualiza os dados filtrados pelo período
+          }
+
+
+          if (data) {
+            const saldoPeriodoCalculado = data.reduce((total, transacao) => {
+              const dataTransacao = new Date(transacao.dataTransferencia);
+              if (dataTransacao >= new Date(dataInicial) && dataTransacao <= new Date(dataFinal)) {
+                return transacao.tipo === 'DEBITO' ? total - transacao.valor : total + transacao.valor;
+              }
+              return total;
+            }, 0);
+
+            setSaldoPeriodo(saldoPeriodoCalculado); // Define o saldo no período
+          }
+        })
+        .catch(error => {
+          console.error(error);
+        });
+    }
+
   };
 
   // Remove o filtro da data início e data fim
@@ -148,6 +177,11 @@ function App() {
     setFilteredData([]); // Limpa os dados das datas filtradas
     setFilteredOperador([]); // Limpa os dados filtrados pelo nome do operador
     setFilter([]); // Limpa os dados filtrados das data e pelo nome do operador
+
+    // Limpa os campos
+    setDataInicial('');
+    setDataFinal('');
+    setNomeOperador('');
 
     const saldoPeriodoCalculado = data
       ? data.reduce((total, transacao) => {
@@ -183,50 +217,69 @@ function App() {
     (filteredOperador.length > 0
       ? filteredOperador
       : filteredData.length > 0
-      ? filteredData
-      : filter.length > 0
-      ? filter
-      : data || []
+        ? filteredData
+        : filter.length > 0
+          ? filter
+          : data || []
     ).length / itemsPerPage
   );
 
+  // Função para verificar se o valor contém apenas letras
+  const containsOnlyLetters = (value: string) => {
+    const regex = /^[A-Za-z]+$/;
+    return regex.test(value);
+  };
+
+  // Função para lidar com a alteração no campo "Nome do Operador"
+  const handleNomeOperadorChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    // Verifica se o novo valor contém apenas letras
+    if (containsOnlyLetters(newValue) || newValue === '') {
+      setNomeOperador(newValue);
+    }
+  };
+
   return (
     <div className="container">
-      <h1>Banco</h1>
+      <h1> EXTRATO BANCÁRIO </h1>
+      <div className="filtro">
 
-      <span>Saldo Total: R$ {saldoTotal.toFixed(2)}</span>
 
-      <span>Saldo no Período: R$ {saldoPeriodo.toFixed(2)}</span>
+        <label htmlFor="data-inicial">Data Início: </label>
+        <input
+          type="date"
+          id="data-inicial"
+          value={dataInicialF}
+          onChange={e => setDataInicial(e.target.value)}
+        />
+        <label htmlFor="data-final">Data Fim: </label>
+        <input
+          type="date"
+          id="data-final"
+          value={dataFinalF}
+          onChange={e => setDataFinal(e.target.value)}
+        />
+        <label>Nome Operador</label>
+        <input
+          type="text"
+          id="nome-operador"
+          value={nomeOperadorF}
+          onChange={handleNomeOperadorChange}
+        />
 
-      <label htmlFor="data-inicial">Data Início: </label>
-      <input
-        type="date"
-        id="data-inicial"
-        value={dataInicialF}
-        onChange={e => setDataInicial(e.target.value)}
-      />
-      <label htmlFor="data-final">Data Fim: </label>
-      <input
-        type="date"
-        id="data-final"
-        value={dataFinalF}
-        onChange={e => setDataFinal(e.target.value)}
-      />
-      <label>Nome Operador</label>
-      <input
-        type="text"
-        id="nome-operador"
-        value={nomeOperadorF}
-        onChange={e => setNomeOperador(e.target.value)}
-      />
 
-      <button onClick={handlePesquisarClick}>Pesquisar</button>
-      <button onClick={handleRemoverFiltro}>Remover Filtro</button>
-
+      </div>
+      <div className='opcao'>
+        <button onClick={handlePesquisarClick}>Pesquisar</button>
+        <button onClick={handleRemoverFiltro}>Remover Filtro</button>
+      </div>
+      <div className='saldos'>
+        <span>Saldo total: R$ {saldoTotal.toFixed(2)}</span>
+        <span>Saldo no período: R$ {saldoPeriodo.toFixed(2)}</span>
+      </div>
       <table className="table">
         <thead>
           <tr>
-            <th>ID</th>
             <th>Data de Transferência</th>
             <th>Valor</th>
             <th>Tipo</th>
