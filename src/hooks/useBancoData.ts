@@ -9,6 +9,7 @@ const API_URL = 'http://localhost:8080'; // Url da API
 const fetchData = async (): AxiosPromise<BancoData[]> => {
     const response = axios.get(API_URL + '/'); // faz a junção com a API_URL
     return response;
+   
 }
 
 // Hook personalizado para buscar dados da API
@@ -25,4 +26,8 @@ export function useBancoData() {
         ...query,
         data: query.data?.data //simplifica o acesso aos dados da reposta da API
     }
+
+    
 }
+
+
