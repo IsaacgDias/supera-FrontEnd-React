@@ -106,8 +106,6 @@ function App() {
 
     // Faz uma chamada à API para filtrar por nome do operador e o período de tempo
     if (dataInicial && dataFinal && nomeOperadorF) {
-      console.log("oieeeeeeee");
-      console.log("dats" + dataInicial + dataFinal)
       const endpoint = `http://localhost:8080/dados?dataInicial=${dataInicial}&dataFinal=${dataFinal}&nomeOperadorTransacao=${nomeOperadorF}`;
 
       fetch(endpoint)
